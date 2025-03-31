@@ -1,5 +1,6 @@
 package com.scaler.productservice.dtos;
 
+import com.scaler.productservice.models.Category;
 import com.scaler.productservice.models.Product;
 
 public class FakeStoreProductDto  {
@@ -56,5 +57,18 @@ public class FakeStoreProductDto  {
 
     public void setTitle(String title) {
         this.title = title;
+    }
+
+    public static ProductDto toProductDto(Product product) {
+        ProductDto productDto = new ProductDto();
+        productDto.setId(product.getId());
+        productDto.setTitle(product.getTitle());
+        productDto.setPrice(product.getPrice());
+        CategoryDto categoryDto = new CategoryDto();
+        categoryDto.setName(product.getCategory().getName());
+        categoryDto.setId(product.getCategory().getId());
+        categoryDto.setDescription(product.getCategory().getDescription());
+        productDto.setCategory(categoryDto);
+        return productDto;
     }
 }

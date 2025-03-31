@@ -14,16 +14,18 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-@Primary
+
 @Service("selfProductService")
 public class SelfProductService implements ProductService{
 
     private ProductRepository productRepository;
     private CategoryRepository categoryRepository;
+
 
 
     SelfProductService(ProductRepository productRepository, CategoryRepository categoryRepository) {
@@ -46,7 +48,7 @@ public class SelfProductService implements ProductService{
     }
 
     @Override
-    public Page<Product> getAllProducts(int pageNumber, int pageSize) {
+    public Page<Product> getAllProducts( int pageNumber, int pageSize) {
         Sort sort = Sort.by("title").ascending().and(Sort.by("price").descending());
 
         return productRepository.findAll(
@@ -79,7 +81,8 @@ public class SelfProductService implements ProductService{
     }
 
     @Override
-    public ProductDto createProduct(@RequestBody Product product) {
+    public ProductDto createProduct(@RequestBody ProductDto productDto) {
+        Product product = ProductDto.toProduct(productDto);
         //Optional<Category> category = categoryRepository.findById(product.getCategory().getId());
         Category category = product.getCategory();
         if(category != null){

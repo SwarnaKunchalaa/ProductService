@@ -1,13 +1,16 @@
 package com.scaler.productservice.models;
 
+import com.scaler.productservice.dtos.ProductDto;
 import jakarta.persistence.Entity;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.MappedSuperclass;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.io.Serializable;
+
 @Entity(name="Products")
-public class Product extends BaseModel {
+public class Product extends BaseModel implements Serializable{
 
 
     private String title;
@@ -38,6 +41,7 @@ public class Product extends BaseModel {
     public void setCategory(Category category) {
         this.category = category;
     }
+
 
 
 }

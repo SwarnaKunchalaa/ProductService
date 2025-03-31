@@ -2,13 +2,16 @@ package com.scaler.productservice.Services;
 
 import com.scaler.productservice.dtos.FakeStoreProductDto;
 import com.scaler.productservice.dtos.ProductDto;
+import com.scaler.productservice.exception.ProductNotFoundException;
 import com.scaler.productservice.models.Category;
 import com.scaler.productservice.models.Product;
 import jakarta.annotation.PostConstruct;
 import org.reactivestreams.Publisher;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -20,20 +23,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Service("fakeStoreProductService")
-
+@Primary
 public class FakeStoreProductService implements ProductService {
 
     @Autowired
     private RestTemplate restTemplate;
+    private RedisTemplate<String, Object> redisTemplate;
 
-    @Autowired
-    RestTemplate restTemplate1;
-
-    @Autowired
-    RestTemplate restTemplate2;
-
-    FakeStoreProductService(RestTemplate restTemplate) {
+    public FakeStoreProductService(RestTemplate restTemplate,
+                                   RedisTemplate redisTemplate) {
         this.restTemplate = restTemplate;
+        this.redisTemplate = redisTemplate;
     }
 
 
@@ -43,15 +43,29 @@ public class FakeStoreProductService implements ProductService {
     }
 
     @Override
-    public ProductDto getSingleProduct(Long productId) {
-     //  throw new ArithmeticException("Something went wrong");
+    public ProductDto getSingleProduct(Long productId) throws ProductNotFoundException {
+
+        //Check if this product is available in REDIS or not ?
+        Product product = (Product) redisTemplate.opsForHash().get("PRODUCTS", "PRODUCT_" + productId);
+
+        //Cache HIT
+        if(product != null) {
+            return FakeStoreProductDto.toProductDto(product);
+        }
         FakeStoreProductDto fakeStoreProductDto = restTemplate.getForObject(
                 "https://fakestoreapi.com/products/" + productId,
                 FakeStoreProductDto.class);
-        //convert fakeStoreProductDto to product
 
-        return null;
-                //convertFakeStoreProductDtoToProduct(fakeStoreProductDto);
+        if (fakeStoreProductDto == null) {
+            throw new ProductNotFoundException("Product with id " + productId + " doesn't exist");
+        }
+        product = convertFakeStoreProductDtoToProduct(fakeStoreProductDto);
+
+        //Before returning the product, store it in the Redis.
+        redisTemplate.opsForHash().put("PRODUCTS", "PRODUCT_" + productId, product);
+
+        return FakeStoreProductDto.toProductDto(product);
+
     }
 
     @Override
@@ -75,23 +89,20 @@ public class FakeStoreProductService implements ProductService {
     }
 
     @Override
-    public ProductDto createProduct(Product product) {
+    public ProductDto createProduct(ProductDto productDto) {
 
-//        System.out.println(restTemplate1+" Hello hoe "+restTemplate2);
-//        FakeStoreProductDto requestBody = new FakeStoreProductDto();
-//        requestBody.setTitle(product.getTitle());
-//        requestBody.setDescription(product.getCategory().getDescription());
-//        requestBody.setPrice(product.getPrice());
-//       // requestBody.setCategory(product.getCategory().getName());
-//
-//        ResponseEntity<FakeStoreProductDto> fakeStoreProductDto = restTemplate.postForEntity(
-//                "https://fakestoreapi.com/products",requestBody,
-//                FakeStoreProductDto.class);
-//        //Product response = convertFakeStoreProductDtoToProduct(fakeStoreProductDto.getBody());
-//
-//        System.out.println(fakeStoreProductDto.getBody().getTitle()+" "+fakeStoreProductDto.getBody().getPrice());
-//        return fakeStoreProductDto.getBody();
-        return null;
+        FakeStoreProductDto requestBody = new FakeStoreProductDto();
+        requestBody.setTitle(productDto.getTitle());
+        requestBody.setDescription(productDto.getCategory().getDescription());
+        requestBody.setPrice(productDto.getPrice());
+        requestBody.setCategory(productDto.getCategory().getName());
+
+        ResponseEntity<FakeStoreProductDto> fakeStoreProductDto = restTemplate.postForEntity(
+                "https://fakestoreapi.com/products",requestBody,
+                FakeStoreProductDto.class);
+
+        Product response = convertFakeStoreProductDtoToProduct(fakeStoreProductDto.getBody());
+        return FakeStoreProductDto.toProductDto(response);
     }
 
     @Override
@@ -115,9 +126,16 @@ public class FakeStoreProductService implements ProductService {
         product.setCategory(category);
         return product;
     }
-    @PostConstruct
-    public void checkBeans() {
-        System.out.println("✅ RestTemplate1: " + restTemplate1);
-        System.out.println("✅ RestTemplate2: " + restTemplate2);
-    }
+//    private Product convertFakeStoreProduct(FakeStoreProductDto fakeStoreProductDto) {
+//        Product product = new Product();
+//        product.setId(fakeStoreProductDto.getId());
+//        product.setTitle(fakeStoreProductDto.getTitle());
+//        product.setPrice(fakeStoreProductDto.getPrice());
+//        Category category = new Category();
+//        category.setName(fakeStoreProductDto.getCategory());
+//        category.setDescription(fakeStoreProductDto.getDescription());
+//        product.setCategory(category);
+//        return product;
+//    }
+
 }

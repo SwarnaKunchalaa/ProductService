@@ -22,6 +22,7 @@ public class ProductController {
     private ProductService productService ;
 
     public ProductController(ProductService productService){
+
         this.productService = productService;
     }
 
@@ -51,13 +52,13 @@ public class ProductController {
     }
 
     @GetMapping()
-    public Page<Product> getAllProducts(@RequestParam("pageNumber") int pageNumber, @RequestParam("pageSize") int pageSize)   throws Exception{
+    public Page<Product> getAllProducts(@RequestParam(defaultValue = "1") int pageNumber, @RequestParam(defaultValue = "0") int pageSize)   throws Exception{
         return productService.getAllProducts(pageNumber, pageSize);
     }
 
     @PutMapping("/{id}")
      public Product updateProduct(@PathVariable("id") Long id, @RequestBody Product product) throws ProductNotFoundException {
-         return null;
+         return productService.updateProduct(id, product);
     }
 
     @PatchMapping("/{id}")
@@ -77,8 +78,8 @@ public class ProductController {
 
 
      @PostMapping()
-    public ProductDto createProduct(@RequestBody Product product){
-        return productService.createProduct(product);
+    public ProductDto createProduct(@RequestBody ProductDto productDto){
+        return productService.createProduct(productDto);
 //         Product fakeStoreProductDto  = productService.createProduct(product);
 //         System.out.println(fakeStoreProductDto.getTitle()+" "+fakeStoreProductDto.getPrice());
 ////        System.out.println(response.getPrice());
